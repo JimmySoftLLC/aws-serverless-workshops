@@ -36,16 +36,48 @@ class SignIn extends React.Component {
 
   async onSubmitForm(e) {
     e.preventDefault();
-    console.log('Form Submitted');
-    this.setState({ stage: 1 });
+    try {
+      const userObject = await Auth.signIn(
+        this.state.email.replace(/[@.]/g, '|'),
+        this.state.password
+      );
+      console.log('userObject', userObject);
+      if (userObject.challengeName) {
+        // Auth challenges are pending prior to token issuance
+        this.setState({ userObject, stage: 1 });
+      } else {
+        // No remaining auth challenges need to be satisfied
+        const session = await Auth.currentSession();
+        // console.log('Cognito User Access Token:', session.getAccessToken().getJwtToken());
+        console.log('Cognito User Identity Token:', session.getIdToken().getJwtToken());
+        // console.log('Cognito User Refresh Token', session.getRefreshToken().getToken());
+        this.setState({ stage: 0, email: '', password: '', code: '' });
+        this.props.history.replace('/app');
+      }
+    } catch (err) {
+      alert(err.message);
+      console.error('Auth.signIn(): ', err);
+    }
   }
 
   async onSubmitVerification(e) {
     e.preventDefault();
-    console.log('Verification Submitted');
-    this.setState({ stage: 0, email: '', password: '', code: '' });
-    // Go back home
-    this.props.history.replace('/');
+    try {
+      const data = await Auth.confirmSignIn(
+        this.state.userObject,
+        this.state.code
+      );
+      console.log('Cognito User Data:', data);
+      const session = await Auth.currentSession();
+      // console.log('Cognito User Access Token:', session.getAccessToken().getJwtToken());
+      console.log('Cognito User Identity Token:', session.getIdToken().getJwtToken());
+      // console.log('Cognito User Refresh Token', session.getRefreshToken().getToken());
+      this.setState({ stage: 0, email: '', password: '', code: '' });
+      this.props.history.replace('/app');
+    } catch (err) {
+      alert(err.message);
+      console.error('Auth.confirmSignIn(): ', err);
+    }
   }
 
   onEmailChanged(e) {
@@ -72,14 +104,14 @@ class SignIn extends React.Component {
     return (
       <div className="app">
         <header>
-          <DynamicImage src="logo.png"/>
+          <DynamicImage src="logo.png" />
         </header>
         <section className="form-wrap">
           <h1>Sign in</h1>
           <form id="registrationForm" onSubmit={(e) => this.onSubmitForm(e)}>
-            <input className={isValidEmail?'valid':'invalid'} type="email" placeholder="Email" value={this.state.email} onChange={(e) => this.onEmailChanged(e)}/>
-            <input className={isValidPassword?'valid':'invalid'} type="password" placeholder="Password" value={this.state.password} onChange={(e) => this.onPasswordChanged(e)}/>
-            <input disabled={!(isValidEmail && isValidPassword)} type="submit" value="Let's Ryde"/>
+            <input className={isValidEmail ? 'valid' : 'invalid'} type="email" placeholder="Email" value={this.state.email} onChange={(e) => this.onEmailChanged(e)} />
+            <input className={isValidPassword ? 'valid' : 'invalid'} type="password" placeholder="Password" value={this.state.password} onChange={(e) => this.onPasswordChanged(e)} />
+            <input disabled={!(isValidEmail && isValidPassword)} type="submit" value="Let's Ryde" />
           </form>
         </section>
       </div>
@@ -93,14 +125,14 @@ class SignIn extends React.Component {
     return (
       <div className="app">
         <header>
-          <DynamicImage src="logo.png"/>
+          <DynamicImage src="logo.png" />
         </header>
         <section className="form-wrap">
           <h1>Enter MFA Code</h1>
           <form id="verifyForm" onSubmit={(e) => this.onSubmitVerification(e)}>
-            <input className={isValidEmail?'valid':'invalid'} type="email" placeholder="Email" value={this.state.email}/>
-            <input className={isValidCode?'valid':'invalid'} type="text" placeholder="Verification Code" value={this.state.code} onChange={(e) => this.onCodeChanged(e)}/>
-            <input disabled={!(isValidCode&&isValidEmail)} type="submit" value="Verify"/>
+            <input className={isValidEmail ? 'valid' : 'invalid'} type="email" placeholder="Email" value={this.state.email} />
+            <input className={isValidCode ? 'valid' : 'invalid'} type="text" placeholder="Verification Code" value={this.state.code} onChange={(e) => this.onCodeChanged(e)} />
+            <input disabled={!(isValidCode && isValidEmail)} type="submit" value="Verify" />
           </form>
         </section>
       </div>
