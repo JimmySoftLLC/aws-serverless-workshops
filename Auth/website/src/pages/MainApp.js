@@ -20,7 +20,7 @@ import { Auth, API } from 'aws-amplify';
 import awsConfig from '../amplify-config';
 import '../css/ride.css';
 
-const apiName = 'WildRydesAPI';
+const apiName = 'WildRydes';
 const apiPath = '/ride';
 
 class MainApp extends React.Component {
@@ -48,8 +48,8 @@ class MainApp extends React.Component {
    * @return {Boolean} true if API is configured
    */
   hasApi() {
-    // const api = awsConfig.API.endpoints.filter(v => v.endpoint !== '');                                                   
-    // return (typeof api !== 'undefined');
+    const api = awsConfig.API.endpoints.filter(v => v.endpoint !== '');
+    return (typeof api !== 'undefined');
   }
 
   /**
@@ -59,7 +59,20 @@ class MainApp extends React.Component {
    * @param {Number} longitude
    */
   async getData(pin) {
-    console.error('Request a Ride is not implemented');
+    const apiRequest = {
+      body: {
+        PickupLocation: {
+          Longitude: pin.longitude,
+          Latitude: pin.latitude
+        }
+      },
+      headers: {
+        'Authorization': this.state.idToken,
+        'Content-Type': 'application/json'
+      }
+    };
+    console.log('API Request:', apiRequest);
+    return await API.post(apiName, apiPath, apiRequest);
   }
 
   /**
@@ -71,7 +84,7 @@ class MainApp extends React.Component {
       return true;
     }
 
-    const updates = [ 'Requesting Unicorn' ];
+    const updates = ['Requesting Unicorn'];
     try {
       this.setState({
         requestRideEnabled: false,
@@ -79,14 +92,14 @@ class MainApp extends React.Component {
       });
       const data = await this.getData(this.state.pin);
       console.log(data);
-      updates.push([ `Your unicorn, ${data.Unicorn.Name} will be with you in ${data.Eta}` ]);
+      updates.push([`Your unicorn, ${data.Unicorn.Name} will be with you in ${data.Eta}`]);
       this.setState({ updates });
 
       // Let's fake the arrival
       setTimeout(() => {
         console.log('Ride Complete');
         const updateList = this.state.updates;
-        updateList.push([ `${data.Unicorn.Name} has arrived` ]);
+        updateList.push([`${data.Unicorn.Name} has arrived`]);
         this.setState({
           updates: updateList,
           requestRideEnabled: false,
@@ -95,7 +108,7 @@ class MainApp extends React.Component {
       }, data.Eta * 1000);
     } catch (err) {
       console.error(err);
-      updates.push([ 'Error finding unicorn' ]);
+      updates.push(['Error finding unicorn']);
       this.setState({ updates });
     }
   }
@@ -117,7 +130,7 @@ class MainApp extends React.Component {
     if (!hasApi) {
       return (
         <div>
-          <BaseMap/>
+          <BaseMap />
           <div className="configMessage">
             <div className="backdrop"></div>
             <div className="panel panel-default">
@@ -152,7 +165,7 @@ class MainApp extends React.Component {
           </div>
         </div>
         <div id="main">
-          <ESRIMap onMapClick={(position) => { this.onMapClick(position); }}/>
+          <ESRIMap onMapClick={(position) => { this.onMapClick(position); }} />
         </div>
       </div>
     );
